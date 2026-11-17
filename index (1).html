@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estate AI · House Price Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090f; --ink:#e9ecf5; --mute:#8b93a7;
+  --gold:#f5c36b; --gold2:#ffdf9e; --mint:#5eead4; --rose:#fb7185; --violet:#8b5cf6;
+  --glass:rgba(255,255,255,.055); --line:rgba(255,255,255,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;overflow-x:hidden;
+  background-image:
+    radial-gradient(1000px 600px at 12% -10%,rgba(139,92,246,.28),transparent 60%),
+    radial-gradient(900px 600px at 95% 10%,rgba(245,195,107,.18),transparent 60%),
+    radial-gradient(800px 700px at 50% 120%,rgba(94,234,212,.16),transparent 60%);
+}
+/* subtle grid */
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:56px 56px;opacity:.12;
+  mask-image:radial-gradient(ellipse at 50% 30%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse at 50% 30%,#000 20%,transparent 75%)}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+.wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:44px 22px 60px}
+
+/* ---------- header ---------- */
+header{text-align:center;margin-bottom:34px}
+.badge{display:inline-flex;gap:8px;align-items:center;padding:7px 16px;border-radius:99px;font-size:12px;letter-spacing:1.6px;text-transform:uppercase;
+  color:var(--gold2);background:rgba(245,195,107,.1);border:1px solid rgba(245,195,107,.35)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 12px var(--mint);animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.25}}
+h1{font-family:'Playfair Display',serif;font-size:clamp(38px,7vw,74px);line-height:1.02;margin:18px 0 12px;font-weight:800;letter-spacing:-1px}
+h1 em{font-style:italic;background:linear-gradient(100deg,var(--gold),#fff 40%,var(--mint),var(--gold));background-size:250% auto;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
+@keyframes shine{to{background-position:250% center}}
+header p{color:var(--mute);max-width:560px;margin:0 auto;font-weight:300;font-size:16px;line-height:1.6}
+
+/* skyline */
+.skyline{margin:30px auto 0;max-width:760px;opacity:.95}
+.skyline svg{width:100%;height:auto;display:block}
+.win{animation:win 3s infinite}
+.win:nth-child(3n){animation-delay:-1s}.win:nth-child(3n+1){animation-delay:-2s}.win:nth-child(5n){animation-delay:-.4s}
+@keyframes win{0%,100%{opacity:.15}50%{opacity:1}}
+
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:1.25fr .85fr;gap:26px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{
+  background:var(--glass);border:1px solid var(--line);border-radius:28px;padding:30px;
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);
+  animation:rise .9s cubic-bezier(.2,.8,.2,1) both;
+}
+.panel:nth-child(2){animation-delay:.15s}
+@keyframes rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+.panel h2{font-family:'Playfair Display',serif;font-size:22px;margin-bottom:22px;display:flex;align-items:center;gap:10px}
+.panel h2 span{font-size:20px}
+
+/* ---------- controls ---------- */
+.row{display:grid;grid-template-columns:1fr 1fr;gap:20px 22px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
+.f{display:flex;flex-direction:column;gap:9px}
+.f.full{grid-column:1/-1}
+.lab{display:flex;justify-content:space-between;align-items:baseline;font-size:11.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--mute);font-weight:500}
+.lab b{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:0;text-transform:none;color:var(--gold2);font-weight:700}
+.num{
+  width:100%;padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.06);
+  color:var(--ink);font:inherit;font-size:16px;outline:none;transition:.3s}
+.num:focus{border-color:var(--gold);box-shadow:0 0 0 4px rgba(245,195,107,.18);background:rgba(255,255,255,.09);transform:translateY(-2px)}
+/* range sliders */
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:9px;outline:none;cursor:pointer;
+  background:linear-gradient(90deg,var(--gold) var(--p,50%),rgba(255,255,255,.12) var(--p,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff,var(--gold));border:3px solid #1a1405;box-shadow:0 0 0 2px var(--gold),0 6px 16px rgba(245,195,107,.55);transition:.2s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--gold);border:3px solid #1a1405;box-shadow:0 0 0 2px var(--gold)}
+/* quality pills */
+.pills{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.pill{padding:11px 0;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--mute);
+  font:inherit;font-weight:600;font-size:14px;cursor:pointer;transition:.25s}
+.pill:hover{transform:translateY(-3px);color:#fff;border-color:var(--mint)}
+.pill.on{color:#04110f;background:linear-gradient(135deg,var(--mint),#a7f3d0);border-color:transparent;box-shadow:0 8px 20px rgba(94,234,212,.4);transform:translateY(-3px)}
+@media(max-width:560px){.pills{grid-template-columns:repeat(5,1fr)}}
+
+.cta{
+  margin-top:26px;width:100%;padding:18px;border:none;border-radius:16px;cursor:pointer;position:relative;overflow:hidden;
+  font:inherit;font-size:16px;font-weight:600;letter-spacing:1px;color:#1a1100;
+  background:linear-gradient(100deg,var(--gold),#ffe9b8,var(--gold));background-size:220% auto;
+  box-shadow:0 14px 34px rgba(245,195,107,.4);transition:.4s}
+.cta:hover{background-position:right center;transform:translateY(-3px);box-shadow:0 20px 44px rgba(245,195,107,.55)}
+.cta::after{content:"";position:absolute;top:0;left:-70%;width:50%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.7),transparent);transform:skewX(-20deg);animation:sweep 3s infinite}
+@keyframes sweep{to{left:140%}}
+.cta.busy{pointer-events:none;opacity:.7}
+
+/* ---------- result ---------- */
+.result{position:sticky;top:24px;text-align:center;min-height:430px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.ring{position:relative;width:210px;height:210px;margin-bottom:18px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .bg{stroke:rgba(255,255,255,.08)}
+.ring .fg{stroke:url(#g);stroke-linecap:round;stroke-dasharray:597;stroke-dashoffset:597;transition:stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 0 10px rgba(245,195,107,.7))}
+.ring .center{position:absolute;inset:0;display:grid;place-items:center;font-size:62px;animation:bob 3.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.tag{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--mute)}
+.price{font-family:'Playfair Display',serif;font-weight:800;font-size:clamp(40px,6vw,56px);margin:6px 0 4px;
+  background:linear-gradient(100deg,#fff,var(--gold2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hint{color:var(--mute);font-size:14px;font-weight:300;max-width:260px;line-height:1.55}
+.chips{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:20px}
+.chip{padding:9px 14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--line);font-size:13px;color:var(--ink)}
+.chip small{display:block;color:var(--mute);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
+.err{color:#fecdd3;background:rgba(251,113,133,.12);border:1px solid rgba(251,113,133,.4);padding:14px 16px;border-radius:14px;font-size:14px}
+.pop{animation:pop .7s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+footer{text-align:center;color:var(--mute);font-size:12px;margin-top:38px;opacity:.7;letter-spacing:.5px}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+
+<div class="wrap">
+  <header>
+    <span class="badge"><i class="dot"></i> Linear Regression · Live Model</span>
+    <h1>Know your home's <em>true value</em></h1>
+    <p>Dial in the details of any property and get an instant, machine‑learning price estimate.</p>
+
+    <div class="skyline" aria-hidden="true">
+      <svg viewBox="0 0 760 150" preserveAspectRatio="xMidYMax meet">
+        <defs><linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2f55"/><stop offset="1" stop-color="#0d1020"/></linearGradient></defs>
+        <g fill="url(#b)" stroke="rgba(255,255,255,.14)">
+          <rect x="30" y="70" width="60" height="80"/><rect x="100" y="40" width="50" height="110"/>
+          <polygon points="170,150 170,80 215,40 260,80 260,150"/><rect x="275" y="20" width="62" height="130"/>
+          <rect x="350" y="62" width="70" height="88"/><polygon points="440,150 440,70 485,30 530,70 530,150"/>
+          <rect x="545" y="48" width="55" height="102"/><rect x="612" y="80" width="62" height="70"/><rect x="685" y="58" width="48" height="92"/>
+        </g>
+        <g fill="#ffd98a" id="wins"></g>
+        <line x1="0" y1="149.5" x2="760" y2="149.5" stroke="rgba(245,195,107,.5)"/>
+      </svg>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- INPUT -->
+    <section class="panel">
+      <h2><span>🏡</span> Property details</h2>
+      <form id="form" autocomplete="off">
+        <div class="row">
+          <div class="f full">
+            <div class="lab">Square footage <b id="o_sq">2000</b></div>
+            <input type="range" id="sq" min="300" max="10000" step="50" value="2000">
+          </div>
+          <div class="f">
+            <div class="lab">Bedrooms <b id="o_bed">3</b></div>
+            <input type="range" id="bed" min="1" max="10" step="1" value="3">
+          </div>
+          <div class="f">
+            <div class="lab">Bathrooms <b id="o_bath">2</b></div>
+            <input type="range" id="bath" min="1" max="8" step="1" value="2">
+          </div>
+          <div class="f">
+            <div class="lab">Year built <b id="o_yr">2005</b></div>
+            <input type="range" id="yr" min="1900" max="2026" step="1" value="2005">
+          </div>
+          <div class="f">
+            <div class="lab">Garage size <b id="o_gar">1</b></div>
+            <input type="range" id="gar" min="0" max="6" step="1" value="1">
+          </div>
+          <div class="f full">
+            <div class="lab">Lot size <b id="o_lot">1.0</b></div>
+            <input type="range" id="lot" min="0.1" max="10" step="0.1" value="1">
+          </div>
+          <div class="f full">
+            <div class="lab">Neighborhood quality <b id="o_q">5</b></div>
+            <div class="pills" id="pills"></div>
+          </div>
+        </div>
+        <button class="cta" id="btn" type="submit">✨ Estimate price</button>
+      </form>
+    </section>
+
+    <!-- RESULT -->
+    <aside class="panel result" id="result">
+      <div class="ring">
+        <svg viewBox="0 0 220 220">
+          <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5c36b"/><stop offset="1" stop-color="#5eead4"/></linearGradient></defs>
+          <circle class="bg" cx="110" cy="110" r="95" fill="none" stroke-width="10"/>
+          <circle class="fg" id="fg" cx="110" cy="110" r="95" fill="none" stroke-width="10"/>
+        </svg>
+        <div class="center" id="emoji">🏠</div>
+      </div>
+      <div class="tag">Estimated market value</div>
+      <div class="price" id="price">$ ——</div>
+      <p class="hint" id="hint">Adjust the sliders and press <b>Estimate price</b> to see your valuation.</p>
+      <div class="chips" id="chips"></div>
+    </aside>
+  </div>
+  <footer>Built with Flask &amp; scikit‑learn · Estimates are model predictions, not appraisals</footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+
+/* glowing windows in skyline */
+(function(){
+  let s='';
+  [[40,80],[100,50],[285,30],[355,72],[552,58],[620,90],[692,68],[180,95],[450,85]].forEach(([x,y])=>{
+    for(let r=0;r<4;r++)for(let c=0;c<3;c++){
+      const wx=x+c*14+6, wy=y+r*17;
+      if(wy<140) s+=`<rect class="win" x="${wx}" y="${wy}" width="7" height="9" rx="1"/>`;
+    }
+  });
+  $('wins').innerHTML=s;
+})();
+
+/* starfield */
+(function(){
+  const c=$('stars'),x=c.getContext('2d');let w,h,p=[];
+  function size(){w=c.width=innerWidth;h=c.height=innerHeight;p=Array.from({length:Math.min(90,w/12)},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.5+.3,v:Math.random()*.25+.05,a:Math.random()}))}
+  size();addEventListener('resize',size);
+  (function loop(){x.clearRect(0,0,w,h);
+    p.forEach(s=>{s.y-=s.v;s.a+=.012;if(s.y<0){s.y=h;s.x=Math.random()*w}
+      x.fillStyle=`rgba(255,235,190,${.25+.45*Math.abs(Math.sin(s.a))})`;x.beginPath();x.arc(s.x,s.y,s.r,0,6.3);x.fill()});
+    requestAnimationFrame(loop)})();
+})();
+
+/* sliders */
+const maps={sq:'o_sq',bed:'o_bed',bath:'o_bath',yr:'o_yr',gar:'o_gar',lot:'o_lot'};
+function sync(el){
+  const p=(el.value-el.min)/(el.max-el.min)*100;el.style.setProperty('--p',p+'%');
+  let v=el.value; if(el.id==='sq') v=Number(v).toLocaleString(); if(el.id==='lot') v=Number(v).toFixed(1);
+  $(maps[el.id]).textContent=v;
+}
+Object.keys(maps).forEach(id=>{const el=$(id);sync(el);el.addEventListener('input',()=>sync(el))});
+
+/* quality pills */
+let quality=5;
+for(let i=1;i<=10;i++){
+  const b=document.createElement('button');b.type='button';b.className='pill'+(i===quality?' on':'');b.textContent=i;
+  b.onclick=()=>{quality=i;$('o_q').textContent=i;document.querySelectorAll('.pill').forEach(x=>x.classList.remove('on'));b.classList.add('on')};
+  $('pills').appendChild(b);
+}
+
+/* count-up */
+function countUp(to){
+  const t0=performance.now(),d=1400;
+  (function f(t){const k=Math.min(1,(t-t0)/d),e=1-Math.pow(1-k,4);
+    $('price').textContent='$'+Math.round(to*e).toLocaleString();
+    if(k<1)requestAnimationFrame(f)})(t0);
+}
+
+/* submit */
+$('form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const btn=$('btn');btn.classList.add('busy');btn.textContent='⏳ Analysing...';
+  const body={square_footage:$('sq').value,bedrooms:$('bed').value,bathrooms:$('bath').value,
+    year_built:$('yr').value,lot_size:$('lot').value,garage_size:$('gar').value,quality:quality};
+  try{
+    const r=await fetch('/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json(); if(!d.ok) throw new Error(d.error);
+    countUp(d.price);
+    $('emoji').textContent=d.price>800000?'🏰':d.price>400000?'🏡':'🏠';
+    $('hint').textContent='Based on the details you entered.';
+    $('chips').innerHTML=`
+      <div class="chip pop"><small>Per sq ft</small>$${Math.round(d.per_sqft).toLocaleString()}</div>
+      <div class="chip pop"><small>Size</small>${Number(body.square_footage).toLocaleString()} ft²</div>
+      <div class="chip pop"><small>Quality</small>${quality}/10</div>`;
+    const fg=$('fg');fg.style.strokeDashoffset=597;
+    requestAnimationFrame(()=>setTimeout(()=>fg.style.strokeDashoffset=597*(1-Math.min(1,Math.max(.08,d.price/1500000))),30));
+  }catch(err){
+    $('price').textContent='$ ——';$('chips').innerHTML=`<div class="err">⚠️ ${err.message}</div>`;
+  }
+  btn.classList.remove('busy');btn.textContent='✨ Estimate price';
+  if(innerWidth<900)$('result').scrollIntoView({behavior:'smooth',block:'center'});
+});
+</script>
+</body>
+</html>
